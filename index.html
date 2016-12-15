@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>gs Map Prototype</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+
+   <!-- <script src="lib/jquery/1.12.4/jquery.min.js"></script>
+    <link href="lib/bootstrap-3.3.6-dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="lib/bootstrap-3.3.6-dist/js/bootstrap.min.js"></script>
+   --> <script src="ol.js"></script>
+
+
+    <style>
+        .ol-overlaycontainer{
+            height:10px!important;
+            position:absolute;
+            top:10px;
+        }
+        .ol-overlaycontainer-stopevent{
+            height:10px!important;
+            position:absolute;
+            top:10px;
+        }
+
+        .layerItem{
+            cursor:default;
+            font-family:Arial;
+            font-size:10pt;
+            width:90px;
+            height:40px;
+            position:absolute;
+            right:5px;
+            
+            text-align:center;
+            vertical-align:middle;
+            line-height:20px;
+            background-color:rgba(0,0,0,0.5);
+        }
+
+        .layerItem:hover{
+           color:#fff;
+        }
+    </style>
+
+</head>
+<body >
+<div id="mMap" style="position:absolute;left:0px;top:0px;bottom:0px;;right:0px;background:#eee;"></div>
+
+<div id="layerItem0" class="layerItem" style="top:5px;color:#fff;" onclick="setLayer(0,this);">Heatmap</div>
+<div id="layerItem1" class="layerItem" style="top:50px;" onclick="setLayer(1,this);">Measurement network</div>
+<div id="layerItem2" class="layerItem" style="top:95px;" onclick="setLayer(2,this);">Polygons</div>
+<div id="layerItem3" class="layerItem" style="top:140px;" onclick="setLayer(3,this);">User polygons</div>
+<div id="layerItem4" class="layerItem" style="top:185px;" onclick="setLayer(4,this);">Polygon join</div>
+<div id="layerItem5" class="layerItem" style="top:230px;" onclick="setLayer(5,this);">User join</div>
+<div id="layerItem6" class="layerItem" style="top:275px;" onclick="setLayer(6,this);">User intersection</div>
+</body>
+
+<script>
+   
+
+    var activeBaseLayer =new ol.layer.Tile({
+        source: new ol.source.XYZ({
+            url: ('http://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png')
+            , crossOrigin: null
+        })});
+
+
+    var map = new ol.Map({
+     controls: ol.control.defaults({attribution: false,zoom: false}),
+     /*   controls: ol.control.defaults({
+            attributionOptions: false
+        }).extend([
+            new ol.control.ZoomSlider()
+
+        ]),
+       */ layers: [
+            activeBaseLayer
+        ],
+        target: "mMap" ,
+        view: new ol.View({
+            center: ll2xy([( 23.725), ( 37.973)]),
+            zoom: 15
+        })
+    });
+
+
+    var ex = llPlainArray2xy([23.719787140632-0.5,37.967724837789-0.5,23.730444562081+0.5,37.977393883902+0.5])
+
+    var heatmap = new ol.layer.Image({
+       // extent: ex,//[-13884991, 2870341, -7455066, 6338219],
+        source: new ol.source.ImageWMS({
+            //url: 'http://127.0.0.1:18080/geoserver/cite/wms?',
+            url: 'http://147.102.110.15:8080/geoserver/cite/wms?',
+            //params: {'LAYERS': 'cite:test sos'},
+            params: {'LAYERS': 'cite:heatmap'},
+            serverType: 'geoserver'
+        })
+    })
+
+
+    var lineLayer = new ol.layer.Image({
+        source: new ol.source.ImageWMS({
+            url: 'http://147.102.110.15:8080/geoserver/cite/wms?',
+            //url: 'http://127.0.0.1:18080/geoserver/cite/wms?',
+            params: {'LAYERS': 'cite:lines'},
+            serverType: 'geoserver'
+        })
+    })
+    //map.addLayer(lineLayer);
+
+
+
+    var polyLayer = new ol.layer.Image({
+        source: new ol.source.ImageWMS({
+            url: 'http://147.102.110.15:8080/geoserver/cite/wms?',
+            params: {'LAYERS': 'poly'},
+            serverType: 'geoserver'
+        })
+    })
+    //map.addLayer(polyLayer);
+
+
+
+    var unionLayer = new ol.layer.Image({
+        // extent: ex,//[-13884991, 2870341, -7455066, 6338219],
+        source: new ol.source.ImageWMS({
+            url: 'http://147.102.110.15:8080/geoserver/cite/wms?',
+            params: {'LAYERS': 'union'},
+            serverType: 'geoserver'
+        })
+    })
+    //map.addLayer(unionLayer);
+
+
+    var userPolyLayer = new ol.layer.Image({
+        // extent: ex,//[-13884991, 2870341, -7455066, 6338219],
+        source: new ol.source.ImageWMS({
+            url: 'http://147.102.110.15:8080/geoserver/cite/wms?',
+            params: {'LAYERS': 'userpoly'},
+            serverType: 'geoserver'
+        })
+    })
+    //map.addLayer(userPolyLayer);
+
+
+
+    var userUnionLayer = new ol.layer.Image({
+        // extent: ex,//[-13884991, 2870341, -7455066, 6338219],
+        source: new ol.source.ImageWMS({
+            url: 'http://147.102.110.15:8080/geoserver/cite/wms?',
+            params: {'LAYERS': 'userunion'},
+            serverType: 'geoserver'
+        })
+    })
+   
+
+
+    var userIntersection = new ol.layer.Image({
+        // extent: ex,//[-13884991, 2870341, -7455066, 6338219],
+        source: new ol.source.ImageWMS({
+            url: 'http://147.102.110.15:8080/geoserver/cite/wms?',
+            params: {'LAYERS': 'intersection'},
+            serverType: 'geoserver'
+        })
+    })
+    //map.addLayer(userIntersection);
+
+
+var layerArray = [heatmap, lineLayer, polyLayer, userPolyLayer, unionLayer, userUnionLayer, userIntersection];
+var layerIndex = 0;
+map.addLayer(heatmap);
+
+function setLayer(index,ob){
+    var o = document.getElementsByClassName('layerItem');
+    for(var i =0;i< layerArray.length;i++){
+        document.getElementById('layerItem'+i).style.color='';
+    }
+    ob.style.color = '#fff';
+    map.removeLayer(layerArray[layerIndex]);
+    map.addLayer(layerArray[index]);
+    layerIndex = index;
+}
+
+
+//map.addLayer(userIntersection);
+//map.addLayer(userUnionLayer);
+//map.addLayer(unionLayer);
+// map.addLayer(userPolyLayer);
+//map.addLayer(polyLayer);
+   //  map.addLayer(lineLayer);
+//	map.addLayer(heatmap);
+    function ll2xy (data){
+        if(data.length==2){
+            return ol.proj.transform(data, 'EPSG:4326', 'EPSG:3857');
+        }else if(data.length==4){
+            var p1 = ol.proj.transform([data[0],data[1]], 'EPSG:4326', 'EPSG:3857');
+            var p2 = ol.proj.transform([data[2],data[3]], 'EPSG:4326', 'EPSG:3857');
+            return [p1[0],p1[1],p2[0],p2[1]];
+        }else{
+            alert("unhandled");
+        }
+    }
+
+    function llPlainArray2xy (data){     //[x,y,x,y,..]
+        var out= [];
+        for(var i =0;i<data.length;i=i+2){
+            var c = ll2xy([data[i],data[i+1]]);
+            out.push(c[0]);
+            out.push(c[1]);
+        }
+        return out;
+    }
+
+
+
+</script>
+</html>
